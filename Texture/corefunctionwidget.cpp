@@ -10,15 +10,14 @@ static GLuint VBO, VAO, EBO, texture1, texture2;
 CoreFunctionWidget::CoreFunctionWidget(QWidget *parent)
     : QOpenGLWidget(parent)
     , m_pTimer(new QTimer(this))
-    , m_ftime(-1.5)
+    , m_ftime(0.0f)
+    , m_camera(new Camera())
 {
-    m_pTimer->setInterval(200);
+    m_pTimer->setInterval(50);
 
     connect(m_pTimer, &QTimer::timeout, this, [ = ]
     {
         m_ftime += 1.0f;
-//        if(m_ftime >= 90.0f)
-//            m_ftime = -90.0f;
         update();
     });
     m_pTimer->start();
@@ -79,7 +78,7 @@ void CoreFunctionWidget::initializeGL()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    QImage img1 = QImage(":/earth.jpg").convertToFormat(QImage::Format_RGB888).mirrored();
+    QImage img1 = QImage(":/sun.jpg").convertToFormat(QImage::Format_RGB888).mirrored();
     if(!img1.isNull())
     {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img1.width(), img1.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, img1.bits());
@@ -97,26 +96,93 @@ void CoreFunctionWidget::resizeGL(int w, int h)
     glViewport(0, 0, w, h);
 }
 
+static float cubeVelocity[] = {0.0f, 1.60f, 1.17f, 1.0f, 0.8f, 0.44f, 0.32f, 0.23f, 0.18f};
+static float cubeVolume[] = {1.0f, 0.2f, 0.25f, 0.3f, 0.25f, 0.7f, 0.65f, 0.4f, 0.6f};
+static float cubedistance[] = {0.0f, 2.0f, 3.0f, 4.5f, 6.0f, 8.0f, 11.0f, 14.0f, 16.0f};
+
 void CoreFunctionWidget::paintGL()
 {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    m_camera->processInput(1.0f);
 
     shaderProgram.bind();
 
-    QMatrix4x4 model;
-    model.rotate(m_ftime, QVector3D(1.0f, 0.0f, 0.0f));
-    model.scale(0.8f);
-    shaderProgram.setUniformValue("model", model);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture1);
-//    glActiveTexture(GL_TEXTURE1);
-//    glBindTexture(GL_TEXTURE_2D, texture2);
+    QMatrix4x4 projection;
+    projection.perspective(m_camera->zoom, width() / height(), 0.1f, 500.0f);
+    shaderProgram.setUniformValue("projection", projection);
+    shaderProgram.setUniformValue("view", m_camera->getViewMatrix());
 
-    glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, sizeof(unsigned int) * indexes.size(), GL_UNSIGNED_INT, 0);
+    for(uint i = 0; i < 9; i++)
+    {
+        QMatrix4x4 model;
+        float angle = cubeVelocity[i] * m_ftime;
+        model.rotate(angle, QVector3D(0.0f, 0.0f, 1.0f));
+        model.translate(QVector3D(cubedistance[i], 0.0f, 0.0f));
+        model.rotate(angle,QVector3D(0.0f, 0.0f, 1.0f));
+//        model.rotate(-90,QVector3D(1.0f, 0.0f, 0.0f));
+        model.scale(cubeVolume[i]);
+        shaderProgram.setUniformValue("model", model);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture1);
+        glBindVertexArray(VAO);
+        glDrawElements(GL_TRIANGLES, sizeof(unsigned int) * indexes.size(), GL_UNSIGNED_INT, 0);
+    }
 
     shaderProgram.release();
+}
+
+void CoreFunctionWidget::keyPressEvent(QKeyEvent *event)
+{
+    uint key = event->key();
+    if(key < 1024)
+    {
+        m_camera->keys[key] = true;
+    }
+}
+
+void CoreFunctionWidget::keyReleaseEvent(QKeyEvent *event)
+{
+    uint key = event->key();
+    if(key < 1024)
+    {
+        m_camera->keys[key] = false;
+    }
+}
+
+void CoreFunctionWidget::mousePressEvent(QMouseEvent *event)
+{
+    if(event->button() == Qt::LeftButton)
+    {
+        m_bLeftPressed = true;
+        m_posLast = event->pos();
+    }
+}
+
+void CoreFunctionWidget::mouseReleaseEvent(QMouseEvent *event)
+{
+    Q_UNUSED(event);
+    m_bLeftPressed = false;
+}
+
+void CoreFunctionWidget::mouseMoveEvent(QMouseEvent *event)
+{
+    if(m_bLeftPressed)
+    {
+        int xPos = event->pos().x();
+        int yPos = event->pos().y();
+
+        int xoffset = xPos - m_posLast.x();
+        int yoffset = m_posLast.y() - yPos;
+        m_posLast = event->pos();
+        m_camera->processMouseMovement(xoffset, yoffset);
+    }
+}
+
+void CoreFunctionWidget::wheelEvent(QWheelEvent *event)
+{
+    int offset = event->angleDelta().y();
+    m_camera->processMouseScroll(offset / 20.0f);
 }
 
 void CoreFunctionWidget::getSphere()
