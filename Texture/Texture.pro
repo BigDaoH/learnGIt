@@ -24,10 +24,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 
 SOURCES += main.cpp \
-    corefunctionwidget.cpp
+    corefunctionwidget.cpp \
+    camera.cpp
 
 HEADERS  += \
-    corefunctionwidget.h
+    corefunctionwidget.h \
+    camera.h
 
 FORMS    += \
     corefunctionwidget.ui

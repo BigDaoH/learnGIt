@@ -6,5 +6,6 @@
     <qresource prefix="/">
         <file>awesomeface.png</file>
         <file>container.jpg</file>
+        <file>earth.jpg</file>
     </qresource>
 </RCC>

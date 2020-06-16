@@ -21,6 +21,9 @@ protected:
 private:
     QOpenGLShaderProgram shaderProgram;
 
+    QTimer* m_pTimer;
+    float m_ftime;
+
     QVector<float> points;
     QVector<uint> indexes;
     void getSphere();
