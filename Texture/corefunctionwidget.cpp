@@ -7,6 +7,7 @@
 #define vstepNum 20
 #define PI 3.14
 static GLuint VBO, VAO, EBO, texture1, texture2;
+static GLuint arrayTexture[10];
 CoreFunctionWidget::CoreFunctionWidget(QWidget *parent)
     : QOpenGLWidget(parent)
     , m_pTimer(new QTimer(this))
@@ -28,6 +29,7 @@ CoreFunctionWidget::~CoreFunctionWidget()
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
+    glDeleteTextures(10, arrayTexture);
 }
 
 void CoreFunctionWidget::initializeGL()
@@ -72,17 +74,32 @@ void CoreFunctionWidget::initializeGL()
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    glGenTextures(1, &texture1);
-    glBindTexture(GL_TEXTURE_2D, texture1);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    QImage img1 = QImage(":/sun.jpg").convertToFormat(QImage::Format_RGB888).mirrored();
-    if(!img1.isNull())
+    QString fileName[10] = { ":/sun.jpg",
+                             ":/mercury.jpg",
+                             ":/venus.jpg",
+                             ":/earth.jpg",
+                             ":/mars.jpg",
+                             ":/jupiter.jpg",
+                             ":/saturn.jpg",
+                             ":/uranus.jpg",
+                             ":/neptune.jpg",
+                             ":/moon.jpg"
+                           };
+
+    glGenTextures(10, arrayTexture);
+    for(uint i = 0; i < 10; i++ )
     {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img1.width(), img1.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, img1.bits());
-        glGenerateMipmap(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, arrayTexture[i]);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        QImage img = QImage(fileName[i]).convertToFormat(QImage::Format_RGB888).mirrored();
+        if(!img.isNull())
+        {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img.width(), img.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, img.bits());
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
     }
 
     shaderProgram.bind();
@@ -119,15 +136,28 @@ void CoreFunctionWidget::paintGL()
         float angle = cubeVelocity[i] * m_ftime;
         model.rotate(angle, QVector3D(0.0f, 0.0f, 1.0f));
         model.translate(QVector3D(cubedistance[i], 0.0f, 0.0f));
-        model.rotate(angle,QVector3D(0.0f, 0.0f, 1.0f));
-//        model.rotate(-90,QVector3D(1.0f, 0.0f, 0.0f));
+        model.rotate(angle, QVector3D(0.0f, 0.0f, 1.0f));
         model.scale(cubeVolume[i]);
         shaderProgram.setUniformValue("model", model);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture1);
+        glBindTexture(GL_TEXTURE_2D, arrayTexture[i]);
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, sizeof(unsigned int) * indexes.size(), GL_UNSIGNED_INT, 0);
     }
+
+    glUniform1i(shaderProgram.uniformLocation("texture1"), 0);
+    QMatrix4x4 model;
+    model.rotate(m_ftime, QVector3D(0.0f, 0.0f, 1.0f));
+    model.translate(QVector3D(4.5f, 0.0f, 0.0f));
+    model.rotate(m_ftime* 12, QVector3D(0.0f, 0.0f, 1.0f));
+    model.translate(QVector3D(0.5f, 0.0f, 0.0f));
+    model.rotate(m_ftime, QVector3D(0.0f, 0.0f, 1.0f));
+    model.scale(0.05f);
+    shaderProgram.setUniformValue("model", model);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, arrayTexture[9]);
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, sizeof(unsigned int) * indexes.size(), GL_UNSIGNED_INT, 0);
 
     shaderProgram.release();
 }
