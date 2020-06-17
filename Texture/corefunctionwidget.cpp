@@ -131,6 +131,7 @@ void CoreFunctionWidget::paintGL()
     shaderProgram.setUniformValue("view", m_camera->getViewMatrix());
     shaderProgram.setUniformValue("lightColor", QVector3D(1.0f, 1.0f, 1.0f));
     shaderProgram.setUniformValue("lightPos", QVector3D(0.0f, 0.0f, 0.0f));
+    shaderProgram.setUniformValue("viewPos",m_camera->position);
 
     for(uint i = 0; i < 9; i++)
     {
