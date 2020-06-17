@@ -129,6 +129,8 @@ void CoreFunctionWidget::paintGL()
     projection.perspective(m_camera->zoom, width() / height(), 0.1f, 500.0f);
     shaderProgram.setUniformValue("projection", projection);
     shaderProgram.setUniformValue("view", m_camera->getViewMatrix());
+    shaderProgram.setUniformValue("lightColor", QVector3D(1.0f, 1.0f, 1.0f));
+    shaderProgram.setUniformValue("lightPos", QVector3D(0.0f, 0.0f, 0.0f));
 
     for(uint i = 0; i < 9; i++)
     {
@@ -149,7 +151,7 @@ void CoreFunctionWidget::paintGL()
     QMatrix4x4 model;
     model.rotate(m_ftime, QVector3D(0.0f, 0.0f, 1.0f));
     model.translate(QVector3D(4.5f, 0.0f, 0.0f));
-    model.rotate(m_ftime* 12, QVector3D(0.0f, 0.0f, 1.0f));
+    model.rotate(m_ftime * 12, QVector3D(0.0f, 0.0f, 1.0f));
     model.translate(QVector3D(0.5f, 0.0f, 0.0f));
     model.rotate(m_ftime, QVector3D(0.0f, 0.0f, 1.0f));
     model.scale(0.05f);
@@ -232,7 +234,6 @@ void CoreFunctionWidget::getSphere()
             points.push_back(sin(PI * vstep * i)*sin(2 * PI * ustep * j));
             points.push_back(vstep * j);
             points.push_back(1 - ustep * i);
-
         }
     }
     points.push_back(sin(PI * 1)*cos(2 * PI * 1));
