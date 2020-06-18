@@ -50,7 +50,6 @@ void Camera::processMouseMovement(float xoffset, float yoffset, bool constraintP
             this->picth = -1.57f;
         }
     }
-    qDebug()<<picth;
     if(!keys[Qt::Key_Z])
     {
         updateCameraVectors();
@@ -114,7 +113,6 @@ void Camera::updateCameraVectors()
     this->front = front.normalized();
     this->right = QVector3D::crossProduct(this->front, this->worldUp).normalized();
     this->up = QVector3D::crossProduct(this->right, this->front).normalized();
-    qDebug()<<front;
 }
 
 void Camera::updateRoundCameraVector()
