@@ -28,6 +28,7 @@ protected:
     void wheelEvent(QWheelEvent *event);
 private:
     QOpenGLShaderProgram shaderProgram;
+    QOpenGLShaderProgram shaderLight;
     Camera* m_camera;
     bool m_bLeftPressed;
     QPoint m_posLast;

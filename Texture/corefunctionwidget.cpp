@@ -36,26 +36,13 @@ void CoreFunctionWidget::initializeGL()
 {
     this->initializeOpenGLFunctions();
 
-    bool success = shaderProgram.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shader/textures.vert");
-    if(!success)
-    {
-        qDebug() << "shaderProgram addShaderFromSourceFile failed!" << shaderProgram.log();
-        return;
-    }
+    shaderProgram.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shader/textures.vert");
+    shaderProgram.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shader/textures.frag");
+    shaderProgram.link();
 
-    success = shaderProgram.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shader/textures.frag");
-    if(!success)
-    {
-        qDebug() << "shaderProgram addShaderFromSourceFile failed!" << shaderProgram.log();
-        return;
-    }
-
-    success = shaderProgram.link();
-    if(!success)
-    {
-        qDebug() << "shaderProgram link failed!" << shaderProgram.log();
-        return;
-    }
+    shaderLight.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shader/light.vert");
+    shaderLight.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shader/light.frag");
+    shaderLight.link();
 
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -102,9 +89,9 @@ void CoreFunctionWidget::initializeGL()
         }
     }
 
-    shaderProgram.bind();
-    glUniform1i(shaderProgram.uniformLocation("texture1"), 0);
-    shaderProgram.release();
+//    shaderProgram.bind();
+//    glUniform1i(shaderProgram.uniformLocation("texture1"), 0);
+//    shaderProgram.release();
     glEnable(GL_DEPTH_TEST);
 }
 
@@ -113,15 +100,37 @@ void CoreFunctionWidget::resizeGL(int w, int h)
     glViewport(0, 0, w, h);
 }
 
-static float cubeVelocity[] = {0.0f, 1.60f, 1.17f, 1.0f, 0.8f, 0.44f, 0.32f, 0.23f, 0.18f};
-static float cubeVolume[] = {1.0f, 0.2f, 0.25f, 0.3f, 0.25f, 0.7f, 0.65f, 0.4f, 0.6f};
-static float cubedistance[] = {0.0f, 2.0f, 3.0f, 4.5f, 6.0f, 8.0f, 11.0f, 14.0f, 16.0f};
+static float cubeVelocity[] = {0.0f, 1.60f, 1.17f, 1.0f, 0.8f, 0.44f, 0.32f, 0.23f, 0.18f, 1.0f};
+static float cubeVolume[] = {1.0f, 0.2f, 0.25f, 0.3f, 0.25f, 0.7f, 0.65f, 0.4f, 0.6f, 0.1f};
+static float cubedistance[] = {0.0f, 2.0f, 3.0f, 4.5f, 6.0f, 8.0f, 11.0f, 14.0f, 16.0f, 4.5f};
 
 void CoreFunctionWidget::paintGL()
 {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_camera->processInput(1.0f);
+
+    shaderLight.bind();
+
+    {
+        QMatrix4x4 projection;
+        projection.perspective(m_camera->zoom, width() / height(), 0.1f, 500.0f);
+        shaderLight.setUniformValue("projection", projection);
+        shaderLight.setUniformValue("view", m_camera->getViewMatrix());
+        QMatrix4x4 model;
+        float angle = cubeVelocity[0] * m_ftime;
+        model.rotate(angle, QVector3D(0.0f, 0.0f, 1.0f));
+        model.translate(QVector3D(cubedistance[0], 0.0f, 0.0f));
+        model.rotate(angle, QVector3D(0.0f, 0.0f, 1.0f));
+        model.scale(cubeVolume[0]);
+        shaderLight.setUniformValue("model", model);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, arrayTexture[0]);
+        glBindVertexArray(VAO);
+        glDrawElements(GL_TRIANGLES, sizeof(unsigned int) * indexes.size(), GL_UNSIGNED_INT, 0);
+    }
+
+    shaderLight.release();
 
     shaderProgram.bind();
 
@@ -131,14 +140,19 @@ void CoreFunctionWidget::paintGL()
     shaderProgram.setUniformValue("view", m_camera->getViewMatrix());
     shaderProgram.setUniformValue("lightColor", QVector3D(1.0f, 1.0f, 1.0f));
     shaderProgram.setUniformValue("lightPos", QVector3D(0.0f, 0.0f, 0.0f));
-    shaderProgram.setUniformValue("viewPos",m_camera->position);
+    shaderProgram.setUniformValue("viewPos", m_camera->position);
 
-    for(uint i = 0; i < 9; i++)
+    for(uint i = 1; i < 10; i++)
     {
         QMatrix4x4 model;
         float angle = cubeVelocity[i] * m_ftime;
         model.rotate(angle, QVector3D(0.0f, 0.0f, 1.0f));
         model.translate(QVector3D(cubedistance[i], 0.0f, 0.0f));
+        if(9 == i)
+        {
+            model.rotate(m_ftime * 12, QVector3D(0.0f, 0.0f, 1.0f));
+            model.translate(QVector3D(0.7f, 0.0f, 0.0f));
+        }
         model.rotate(angle, QVector3D(0.0f, 0.0f, 1.0f));
         model.scale(cubeVolume[i]);
         shaderProgram.setUniformValue("model", model);
@@ -147,21 +161,6 @@ void CoreFunctionWidget::paintGL()
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, sizeof(unsigned int) * indexes.size(), GL_UNSIGNED_INT, 0);
     }
-
-    glUniform1i(shaderProgram.uniformLocation("texture1"), 0);
-    QMatrix4x4 model;
-    model.rotate(m_ftime, QVector3D(0.0f, 0.0f, 1.0f));
-    model.translate(QVector3D(4.5f, 0.0f, 0.0f));
-    model.rotate(m_ftime * 12, QVector3D(0.0f, 0.0f, 1.0f));
-    model.translate(QVector3D(0.5f, 0.0f, 0.0f));
-    model.rotate(m_ftime, QVector3D(0.0f, 0.0f, 1.0f));
-    model.scale(0.05f);
-    shaderProgram.setUniformValue("model", model);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, arrayTexture[9]);
-    glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, sizeof(unsigned int) * indexes.size(), GL_UNSIGNED_INT, 0);
-
     shaderProgram.release();
 }
 
