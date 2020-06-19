@@ -27,7 +27,7 @@ Camera::~Camera()
 QMatrix4x4 Camera::getViewMatrix()
 {
     QMatrix4x4 view;
-    view.lookAt(position,position+front,up);
+    view.lookAt(position,position+front,worldUp);
     return view;
 }
 
@@ -118,7 +118,7 @@ void Camera::updateCameraVectors()
 void Camera::updateRoundCameraVector()
 {
     float radius = (QVector3D(0.0,0.0,0.0)-position).length();
-    position=QVector3D(cos(yaw)*cos(picth)*radius,sin(picth)*radius,cos(picth)*sin(yaw)*radius);
+    position=QVector3D(cos(-yaw)*cos(-picth)*radius,sin(-picth)*radius,cos(-picth)*sin(-yaw)*radius);
     this->front=QVector3D(0.0f,0.0f,0.0f)-position;
     this->right = QVector3D::crossProduct(front, this->worldUp).normalized();
     this->up = QVector3D::crossProduct(this->right, front).normalized();

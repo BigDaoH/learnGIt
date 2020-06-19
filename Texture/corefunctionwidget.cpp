@@ -89,9 +89,18 @@ void CoreFunctionWidget::initializeGL()
         }
     }
 
-//    shaderProgram.bind();
-//    glUniform1i(shaderProgram.uniformLocation("texture1"), 0);
-//    shaderProgram.release();
+    shaderProgram.bind();
+    shaderProgram.setUniformValue("light.position", 0.0f, 0.0f, 0.0f);
+    shaderProgram.setUniformValue("light.ambient", 0.1f, 0.1f, 0.1f);
+    shaderProgram.setUniformValue("light.diffuse", 0.8f, 0.8f, 0.8f);
+    shaderProgram.setUniformValue("light.specular", 1.0f, 1.0f, 1.0f);
+    shaderProgram.setUniformValue("light.constant", 1.0f);
+    shaderProgram.setUniformValue("light.linear", 0.045f);
+    shaderProgram.setUniformValue("light.quadratic", 0.0075f);
+    shaderProgram.setUniformValue("material.diffuse", 0);
+    shaderProgram.setUniformValue("material.specular", 0);
+    shaderProgram.setUniformValue("material.shininess", 32.0f);
+    shaderProgram.release();
     glEnable(GL_DEPTH_TEST);
 }
 
@@ -126,6 +135,8 @@ void CoreFunctionWidget::paintGL()
         shaderLight.setUniformValue("model", model);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, arrayTexture[0]);
+//        glActiveTexture(GL_TEXTURE1);
+//        glBindTexture(GL_TEXTURE_2D, arrayTexture[0]);
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, sizeof(unsigned int) * indexes.size(), GL_UNSIGNED_INT, 0);
     }
@@ -138,8 +149,6 @@ void CoreFunctionWidget::paintGL()
     projection.perspective(m_camera->zoom, width() / height(), 0.1f, 500.0f);
     shaderProgram.setUniformValue("projection", projection);
     shaderProgram.setUniformValue("view", m_camera->getViewMatrix());
-    shaderProgram.setUniformValue("lightColor", QVector3D(1.0f, 1.0f, 1.0f));
-    shaderProgram.setUniformValue("lightPos", QVector3D(0.0f, 0.0f, 0.0f));
     shaderProgram.setUniformValue("viewPos", m_camera->position);
 
     for(uint i = 1; i < 10; i++)
@@ -150,10 +159,10 @@ void CoreFunctionWidget::paintGL()
         model.translate(QVector3D(cubedistance[i], 0.0f, 0.0f));
         if(9 == i)
         {
-            model.rotate(m_ftime * 12, QVector3D(0.0f, 0.0f, 1.0f));
+            model.rotate(angle * 12, QVector3D(0.0f, 0.0f, 1.0f));
             model.translate(QVector3D(0.7f, 0.0f, 0.0f));
         }
-        model.rotate(angle, QVector3D(0.0f, 0.0f, 1.0f));
+        model.rotate(angle*20, QVector3D(0.0f, 0.0f, 1.0f));
         model.scale(cubeVolume[i]);
         shaderProgram.setUniformValue("model", model);
         glActiveTexture(GL_TEXTURE0);
@@ -221,8 +230,8 @@ void CoreFunctionWidget::getSphere()
 {
     double ustep = 1 / (double)ustepNum, vstep = 1 / (double)vstepNum;
     points.push_back(sin(0)*cos(0));
-    points.push_back(cos(0));
     points.push_back(sin(0)*sin(0));
+    points.push_back(cos(0));
     points.push_back(0.5);
     points.push_back(1);
     for (int i = 1; i < vstepNum; i++)
@@ -230,15 +239,15 @@ void CoreFunctionWidget::getSphere()
         for (int j = 0; j <= ustepNum; j++)
         {
             points.push_back(sin(PI * vstep * i)*cos(2 * PI * ustep * j));
-            points.push_back(cos(PI * vstep * i));
             points.push_back(sin(PI * vstep * i)*sin(2 * PI * ustep * j));
+            points.push_back(cos(PI * vstep * i));
             points.push_back(vstep * j);
             points.push_back(1 - ustep * i);
         }
     }
     points.push_back(sin(PI * 1)*cos(2 * PI * 1));
-    points.push_back(cos(PI * 1));
     points.push_back(sin(PI * 1)*sin(2 * PI * 1));
+    points.push_back(cos(PI * 1));
     points.push_back(0.5);
     points.push_back(0);
 
